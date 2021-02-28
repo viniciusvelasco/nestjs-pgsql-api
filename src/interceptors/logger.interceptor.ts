@@ -5,8 +5,8 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { Logger } from 'winston';
 
 @Injectable()
@@ -14,11 +14,53 @@ export class LoggerInterceptor implements NestInterceptor {
   constructor(@Inject('winston') private logger: Logger) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    this.log(context.switchToHttp().getRequest());
-    const status = context.switchToHttp().getResponse();
-    return next
-      .handle()
-      .pipe(map((value) => (value === null ? '' : console.log(value))));
+    //this.log(context.switchToHttp().getRequest());
+    const req = context.switchToHttp().getRequest();
+    const { statusCode } = context.switchToHttp().getResponse();
+    const start = Date.now();
+    const { originalUrl, method, params, query, body, user } = req;
+    return next.handle().pipe(
+      map((value) => {
+        const t = this.teste(value);
+        const stop = Date.now().toLocaleString();
+        console.log({
+          t,
+          start,
+          statusCode,
+          originalUrl,
+          method,
+          params,
+          query,
+          body,
+          user,
+          stop,
+        });
+        return value;
+      }),
+      catchError((error) => {
+        console.log({ error });
+        const t = this.teste(error.response);
+        const stop = Date.now().toLocaleString();
+        const statusCodeError = error.response.statusCode;
+        console.log({
+          t,
+          start,
+          statusCodeError,
+          originalUrl,
+          method,
+          params,
+          query,
+          body,
+          user,
+          stop,
+        });
+        return throwError(error);
+      }),
+    );
+  }
+
+  private teste(value) {
+    return JSON.stringify(value);
   }
 
   private log(req) {

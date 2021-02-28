@@ -12,6 +12,7 @@ import { User } from 'src/users/user.entity';
 import { AuthService } from './auth.service';
 import { CredentialsDto } from './dtos/credentials.dto';
 import { GetUser } from './get-user.decorator';
+import { RolesGuard } from './roles.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -35,7 +36,7 @@ export class AuthController {
   }
 
   @Get('/me')
-  @UseGuards(AuthGuard())
+  @UseGuards(AuthGuard(), RolesGuard)
   getMe(@GetUser() user: User): User {
     console.log(user);
     return user;
